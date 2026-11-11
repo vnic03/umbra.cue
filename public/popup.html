@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>umbra.cue · Watchlist</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <header>
+        <img
+          src="icons/icon-32.png"
+          srcset="icons/icon-32.png 1x, icons/icon-48.png 2x"
+          width="24"
+          height="24"
+          alt=""
+        />
+        <strong>umbra<span>.cue</span></strong>
+    </header>
+
+    <main>
+        <h1>Your Watchlist</h1>
+        <p id="message" role="status"></p>
+        <section id="list" aria-label="Recently Watched"></section>
+    </main>
+
+    <dialog id="editor">
+        <form id="form">
+            <h2 id="heading">Edit Progress</h2>
+            <p id="series"></p>
+
+            <fieldset>
+                <label>
+                    Season
+                    <input name="season" type="number" min="0" required>
+                </label>
+
+                <label>
+                    Episode
+                    <input name="episode" type="number" min="1" required>
+                </label>
+            </fieldset>
+
+            <label>
+                Position in Seconds
+                <input name="currentTime" type="number" min="0" step="any" required>
+            </label>
+
+            <label class="check">
+                <input name="completed" type="checkbox">
+                Episode Completed
+            </label>
+
+            <p id="error" role="alert"></p>
+
+            <footer>
+                <button type="button" id="cancel">Cancel</button>
+                <button class="primary">Save</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <script src="popup.js"></script>
+</body>
+</html>
