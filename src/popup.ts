@@ -27,7 +27,6 @@ function node<K extends keyof HTMLElementTagNameMap>(tag: K, value: string) {
 }
 
 function clock(seconds: number) {
-  // TODO: explain magic numbers
   return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, Math.floor(seconds) % 60]
     .map((v, i) => (i ? String(v).padStart(2, '0') : String(v)))
     .join(':');
@@ -35,11 +34,13 @@ function clock(seconds: number) {
 
 const pictures = new Map<string, { image: HTMLImageElement; ready: Promise<void> }>();
 
+const POSTER_WIDTH = 104;
+const POSTER_HEIGHT = 156;
 function showPoster(article: HTMLElement, entry: Entry) {
   let picture = pictures.get(entry.id);
 
   if (!picture) {
-    const image = new Image(64, 96);
+    const image = new Image(POSTER_WIDTH, POSTER_HEIGHT);
     image.alt = '';
 
     const ready = loadPoster(entry)
@@ -55,7 +56,8 @@ function showPoster(article: HTMLElement, entry: Entry) {
   const { image, ready } = picture;
 
   void ready.then(() => {
-    if (article.isConnected && image.hasAttribute('src')) article.prepend(image);
+    if (article.isConnected && image.hasAttribute('src'))
+      article.querySelector('.series-summary')?.prepend(image);
   });
 }
 
@@ -82,7 +84,12 @@ function card(entry: Entry) {
     timeStyle: 'short',
   }).format(new Date(entry.lastWatchedAt));
 
-  article.append(
+  const summary = document.createElement('div');
+  summary.className = 'series-summary';
+
+  const details = document.createElement('div');
+  details.className = 'series-details';
+  details.append(
     node('h2', entry.title),
     node('p', 'Season ' + p.season + ' · Episode ' + p.episode),
     node(
@@ -92,6 +99,9 @@ function card(entry: Entry) {
         (p.duration ? ' / ' + clock(p.duration) : ''),
     ),
   );
+
+  summary.append(details);
+  article.append(summary);
 
   if (p.duration) {
     const bar = document.createElement('progress');

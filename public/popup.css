@@ -12,7 +12,7 @@
 }
 
 body {
-  width: 370px;
+  width: 432px;
   margin: 0;
 }
 
@@ -30,17 +30,12 @@ header {
 
 header strong {
   font-size: 20px;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.04em;
 }
 
 header span,
 a {
   color: #c1a2ff;
-}
-
-h1 {
-  font-size: 22px;
-  margin: 0 0 12px;
 }
 
 h2 {
@@ -54,19 +49,75 @@ p {
   color: #c3bdce;
 }
 
-article {
-  padding: 14px 0;
-  border-top: 1px solid #39333f;
+#list {
+  display: grid;
+  gap: 14px;
 }
 
-small {
-  color: #b8b0c2;
+article {
+  padding: 16px;
+  background: #19161e;
+  border: 1px solid #38313f;
+  border-radius: 14px;
+}
+
+.series-summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.series-summary img {
+  flex: none;
+  display: block;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.series-details {
+  min-width: 0;
+}
+
+.series-details h2 {
+  font-size: 23px;
+  line-height: 1.16;
+  letter-spacing: -0.035em;
+}
+
+.series-details p {
+  margin: 8px 0 0;
+}
+
+.series-details p:last-child {
+  font-size: 13px;
+  color: #ded4ec;
+  font-variant-numeric: tabular-nums;
+}
+
+article small {
+  display: block;
+  color: #aea4b8;
+  font-size: 12px;
 }
 
 progress {
+  display: block;
+  appearance: none;
   width: 100%;
-  height: 6px;
-  accent-color: #b491f6;
+  height: 5px;
+  margin-bottom: 8px;
+  border: 0;
+}
+
+progress::-webkit-progress-bar {
+  background: #393240;
+  border-radius: 4px;
+}
+
+progress::-webkit-progress-value {
+  background: #b491f6;
+  border-radius: 4px;
 }
 
 footer,
@@ -91,8 +142,25 @@ button {
   color: inherit;
 }
 
-a {
-  margin-right: auto;
+article footer a {
+  flex: 1;
+  padding: 8px 12px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: 650;
+  color: #21142e;
+  background: #b795ef;
+  border-radius: 7px;
+}
+
+article footer a:hover {
+  background: #c8aaf8;
+}
+
+article footer button {
+  padding: 8px 10px;
+  border-color: transparent;
+  color: #c8bfce;
 }
 
 button:hover {
@@ -154,27 +222,6 @@ input[type='number'] {
 
 #error {
   color: #ffa9b8;
-}
-
-article:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-
-article > img {
-  float: right;
-  margin-left: 12px;
-  border-radius: 4px;
-}
-
-article > progress,
-article > footer {
-  clear: both;
-  display: block;
-}
-
-article > footer {
-  display: flex;
 }
 
 #message:empty {
