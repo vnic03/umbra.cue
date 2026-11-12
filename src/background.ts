@@ -64,11 +64,12 @@ async function handle(msg: unknown, sender: chrome.runtime.MessageSender) {
   if (msg.type === 'list') return repository.all();
   if (typeof msg.id !== 'string') throw Error('Missing Series');
 
+  if (msg.type === 'delete') return repository.remove(msg.id);
+
   const entry = await repository.get(msg.id);
 
   if (!entry || entry.revision !== msg.revision) throw Error('Changed Entry. Please Open again.');
 
-  if (msg.type === 'delete') return repository.remove(entry.id);
   if (msg.type !== 'edit') throw Error('Unknown Action');
 
   const ep = parseEpisode(msg.season, msg.episode),

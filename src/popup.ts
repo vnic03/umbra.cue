@@ -76,46 +76,26 @@ const observer = new IntersectionObserver((items) => {
 const entriesByCard = new WeakMap<HTMLElement, Entry>();
 
 function card(entry: Entry) {
-  const p = entry.episodes[entry.latest];
-
   const article = document.createElement('article');
-  const date = new Intl.DateTimeFormat('en', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(entry.lastWatchedAt));
-
   const summary = document.createElement('div');
   summary.className = 'series-summary';
 
   const details = document.createElement('div');
   details.className = 'series-details';
-  details.append(
-    node('h2', entry.title),
-    node('p', 'Season ' + p.season + ' · Episode ' + p.episode),
-    node(
-      'p',
-      (p.status === 'completed' ? 'Completed · ' : '') +
-        clock(p.currentTime) +
-        (p.duration ? ' / ' + clock(p.duration) : ''),
-    ),
-  );
-
+  const title = node('h2', '');
+  const episode = node('p', '');
+  const position = node('p', '');
+  details.append(title, episode, position);
   summary.append(details);
-  article.append(summary);
 
-  if (p.duration) {
-    const bar = document.createElement('progress');
-    bar.max = p.duration;
-    bar.value = p.currentTime;
-    bar.setAttribute('aria-label', 'Playback Progress');
-    article.append(bar);
-  }
+  const bar = document.createElement('progress');
+  bar.setAttribute('aria-label', 'Playback Progress');
+  const watched = node('small', '');
+  article.append(summary, watched);
 
-  article.append(node('small', 'Last Watched · ' + date));
   const actions = document.createElement('footer'),
     link = node('a', 'View Series');
 
-  link.href = sourceUrl(entry.sourceUrl);
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
 
@@ -124,6 +104,7 @@ function card(entry: Entry) {
 
   edit.onclick = () => {
     editing = entry;
+    const p = entry.episodes[entry.latest];
 
     get('series').textContent = entry.title;
     get('error').textContent = '';
@@ -136,40 +117,99 @@ function card(entry: Entry) {
     dialog.showModal();
   };
 
-  remove.onclick = async () => {
-    if (!confirm(`Delete "${entry.title}" and all saved episodes?`)) return;
-
-    try {
-      await request('delete', { id: entry.id, revision: entry.revision });
-
-      const picture = pictures.get(entry.id);
-      pictures.delete(entry.id);
-
-      await picture?.ready;
-
-      if (picture?.image.src) URL.revokeObjectURL(picture.image.src);
-
-      await removePoster(entry.id).catch(() => {});
-      await refresh();
-    } catch (e) {
-      message.textContent = String(e);
-    }
+  remove.onclick = () => {
+    deletingId = entry.id;
+    get('delete-description').textContent = `Delete “${entry.title}” and all saved episodes?`;
+    deleteDialog.showModal();
   };
 
   actions.append(link, edit, remove);
   article.append(actions);
 
-  entriesByCard.set(article, entry);
+  function update(next: Entry) {
+    entry = next;
+    entriesByCard.set(article, entry);
+    const p = entry.episodes[entry.latest];
+
+    title.textContent = entry.title;
+    episode.textContent = `Season ${p.season} · Episode ${p.episode}`;
+    position.textContent =
+      (p.status === 'completed' ? 'Completed · ' : '') +
+      clock(p.currentTime) +
+      (p.duration ? ' / ' + clock(p.duration) : '');
+    watched.textContent = 'Last Watched · ' + dateFormat.format(new Date(entry.lastWatchedAt));
+    link.href = sourceUrl(entry.sourceUrl);
+
+    if (p.duration) {
+      bar.max = p.duration;
+      bar.value = p.currentTime;
+      if (!bar.parentNode) watched.before(bar);
+    } else {
+      bar.remove();
+    }
+  }
+
+  update(entry);
   observer.observe(article);
 
-  return article;
+  return { article, update };
 }
+
+const dateFormat = new Intl.DateTimeFormat('en', { dateStyle: 'short', timeStyle: 'short' });
+const cards = new Map<string, ReturnType<typeof card>>();
+const deleteDialog = get<HTMLDialogElement>('delete-dialog');
+let deletingId: string | undefined;
+
+get('delete-cancel').onclick = () => deleteDialog.close();
+deleteDialog.onclose = () => {
+  deletingId = undefined;
+};
+
+get('delete-confirm').onclick = async () => {
+  const id = deletingId;
+  if (!id) return;
+  deleteDialog.close();
+
+  try {
+    await request('delete', { id });
+
+    const picture = pictures.get(id);
+    pictures.delete(id);
+
+    await picture?.ready;
+
+    if (picture?.image.src) URL.revokeObjectURL(picture.image.src);
+
+    await removePoster(id).catch(() => {});
+    await refresh();
+  } catch (e) {
+    message.textContent = String(e);
+  }
+};
 
 async function refresh() {
   try {
     const entries: Entry[] = await request('list');
-    observer.disconnect();
-    list.replaceChildren(...entries.map(card));
+    const ids = new Set(entries.map((entry) => entry.id));
+    for (const [id, { article }] of cards) {
+      if (ids.has(id)) continue;
+      observer.unobserve(article);
+      article.remove();
+      cards.delete(id);
+    }
+
+    entries.forEach((entry, index) => {
+      let view = cards.get(entry.id);
+      if (!view) {
+        view = card(entry);
+        cards.set(entry.id, view);
+      } else if (entriesByCard.get(view.article)?.revision !== entry.revision) {
+        view.update(entry);
+      }
+
+      const current = list.children.item(index);
+      if (current !== view.article) list.insertBefore(view.article, current);
+    });
     message.textContent = entries.length ? '' : 'Start watching something to see it here.';
   } catch (e) {
     message.textContent = String(e);
