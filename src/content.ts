@@ -1,4 +1,4 @@
-import { frameInfo, players, sourceUrl, title } from './site';
+import { frameInfo, posterLinks, players, sourceUrl, title } from './site';
 import { parsePlayerEvent } from './player';
 import type { Episode } from './model';
 
@@ -177,3 +177,20 @@ window.addEventListener('popstate', refresh);
 window.addEventListener('pageshow', refresh);
 
 refresh();
+
+function capturePosters() {
+  if (!new URL(location.href).searchParams.has('s')) return;
+
+  const values = Object.fromEntries(
+    [...posterLinks(document, location.href)].map(([link, image]) => [
+      'poster-link:' + link,
+      image,
+    ]),
+  );
+
+  if (Object.keys(values).length) void chrome.storage.local.set(values).catch(() => {});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', capturePosters, { once: true });
+} else capturePosters();

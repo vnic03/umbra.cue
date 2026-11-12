@@ -11,6 +11,7 @@
   "description": "Your watch progress on RamoFlix, saved locally in Brave.",
   "minimum_chrome_version": "110",
   "permissions": ["storage"],
+  "host_permissions": ["https://ramoflix.net/*", "https://www.ramoflix.net/*", "https://image.tmdb.org/*"],
   "background": { "service_worker": "background.js" },
   "action": {
     "default_popup": "popup.html",

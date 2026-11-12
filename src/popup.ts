@@ -1,3 +1,4 @@
+import { loadPoster, removePoster } from './posters';
 import type { Entry } from './model';
 import { sourceUrl } from './site';
 
@@ -31,6 +32,46 @@ function clock(seconds: number) {
     .map((v, i) => (i ? String(v).padStart(2, '0') : String(v)))
     .join(':');
 }
+
+const pictures = new Map<string, { image: HTMLImageElement; ready: Promise<void> }>();
+
+function showPoster(article: HTMLElement, entry: Entry) {
+  let picture = pictures.get(entry.id);
+
+  if (!picture) {
+    const image = new Image(64, 96);
+    image.alt = '';
+
+    const ready = loadPoster(entry)
+      .then((blob) => {
+        if (blob && pictures.get(entry.id)?.image === image) image.src = URL.createObjectURL(blob);
+      })
+      .catch(() => {});
+
+    picture = { image, ready };
+    pictures.set(entry.id, picture);
+  }
+
+  const { image, ready } = picture;
+
+  void ready.then(() => {
+    if (article.isConnected && image.hasAttribute('src')) article.prepend(image);
+  });
+}
+
+const observer = new IntersectionObserver((items) => {
+  for (const item of items) {
+    if (!item.isIntersecting) continue;
+
+    const article = item.target as HTMLElement;
+    observer.unobserve(article);
+    const entry = entriesByCard.get(article);
+
+    if (entry) showPoster(article, entry);
+  }
+});
+
+const entriesByCard = new WeakMap<HTMLElement, Entry>();
 
 function card(entry: Entry) {
   const p = entry.episodes[entry.latest];
@@ -90,6 +131,15 @@ function card(entry: Entry) {
 
     try {
       await request('delete', { id: entry.id, revision: entry.revision });
+
+      const picture = pictures.get(entry.id);
+      pictures.delete(entry.id);
+
+      await picture?.ready;
+
+      if (picture?.image.src) URL.revokeObjectURL(picture.image.src);
+
+      await removePoster(entry.id).catch(() => {});
       await refresh();
     } catch (e) {
       message.textContent = String(e);
@@ -99,12 +149,16 @@ function card(entry: Entry) {
   actions.append(link, edit, remove);
   article.append(actions);
 
+  entriesByCard.set(article, entry);
+  observer.observe(article);
+
   return article;
 }
 
 async function refresh() {
   try {
     const entries: Entry[] = await request('list');
+    observer.disconnect();
     list.replaceChildren(...entries.map(card));
     message.textContent = entries.length ? '' : 'Start watching something to see it here.';
   } catch (e) {

@@ -67,3 +67,55 @@ export function title() {
     .trim()
     .slice(0, 240);
 }
+
+export function seriesLink(raw: string) {
+  const url = new URL(raw);
+
+  if (!sites.has(url.origin) || url.username || url.password) return;
+
+  for (const key of ['season', 'episode', 'e']) url.searchParams.delete(key);
+
+  if (/^\d+$/.test(url.searchParams.get('s') ?? '')) url.searchParams.delete('s');
+
+  url.hash = '';
+  url.searchParams.sort();
+
+  return url.href;
+}
+
+export function posterUrl(raw: string, base: string) {
+  if (!raw) return;
+
+  const url = new URL(raw, base);
+
+  if (url.username || url.password) return;
+
+  if (sites.has(url.origin) && url.pathname.startsWith('/wp-content/uploads/')) return url.href;
+
+  if (
+    url.origin === 'https://image.tmdb.org' &&
+    /^\/t\/p\/[\w-]+\/[\w-]+\.(jpg|png|webp)$/i.test(url.pathname)
+  )
+    return url.origin + url.pathname.replace(/^\/t\/p\/[^/]+/, '/t/p/w154');
+}
+
+export function posterLinks(root: ParentNode, base: string) {
+  const links = new Map<string, string>();
+
+  for (const img of root.querySelectorAll<HTMLImageElement>(
+    '.filmlist .item .poster a[href] img',
+  )) {
+    try {
+      const link = seriesLink(new URL(img.closest('a')!.getAttribute('href')!, base).href);
+      const image = posterUrl(
+        img.dataset.src || img.currentSrc || img.getAttribute('src') || '',
+        base,
+      );
+
+      if (link && image) links.set(link, image);
+    } catch {
+      /* Ignore malformed cards. */
+    }
+  }
+  return links;
+}

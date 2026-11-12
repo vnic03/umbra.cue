@@ -155,3 +155,28 @@ input[type='number'] {
 #error {
   color: #ffa9b8;
 }
+
+article:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+article > img {
+  float: right;
+  margin-left: 12px;
+  border-radius: 4px;
+}
+
+article > progress,
+article > footer {
+  clear: both;
+  display: block;
+}
+
+article > footer {
+  display: flex;
+}
+
+#message:empty {
+  display: none;
+}
